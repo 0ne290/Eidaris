@@ -1,0 +1,33 @@
+Eidaris — Tool for visualizing complex mathematical systems (fractals, attractors,
+dynamic systems)
+
+Copyright (C) 2025
+Main Author: Dorovskoy Alexey Vasilievich (One290 / 0ne290) <lenya.dorovskoy@mail.ru>
+
+All rights granted under the GNU Affero General Public License v3.0 (AGPL-3.0).
+See the LICENSE file for full license text.
+
+Contributors
+------------
+This file lists copyright holders and contributors of Eidaris.
+
+Main Author:
+- Dorovskoy Alexey Vasilievich (One290 / 0ne290) <lenya.dorovskoy@mail.ru>
+
+Contributions:
+- By contributing code, documentation, or other content to Eidaris,
+  you agree to license your contribution under the AGPL v3 (or later).
+- Please add your name and email/username below when making non-trivial contributions.
+
+[No external contributors yet]
+
+
+Recommended License Header for Source Files
+-------------------------------------------
+// Eidaris — Copyright (C) 2025
+// Dorovskoy Alexey Vasilievich (One290 / 0ne290) <lenya.dorovskoy@mail.ru>
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Affero General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version. See the LICENSE file for details.
+// For full copyright and authorship information, see the COPYRIGHT file.
