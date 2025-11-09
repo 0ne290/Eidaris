@@ -6,12 +6,21 @@
 // (at your option) any later version. See the LICENSE file for details.
 // For full copyright and authorship information, see the COPYRIGHT file.
 
+using Eidaris.Presentation.Extensions;
+using Eidaris.Presentation.Interfaces;
+using Microsoft.Extensions.DependencyInjection;
+
 namespace Eidaris.Presentation;
 
 internal static class Program
 {
     private static void Main()
     {
-        Console.WriteLine("Hello, World!");
+        var services = new ServiceCollection();
+        services.Compose();
+        var serviceProvider = services.BuildServiceProvider();
+        
+        var eidarisApplication = serviceProvider.GetRequiredService<IEidarisApplication>();
+        eidarisApplication.Run();
     }
 }
