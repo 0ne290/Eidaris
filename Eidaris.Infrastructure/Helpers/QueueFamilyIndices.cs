@@ -1,10 +1,16 @@
 namespace Eidaris.Infrastructure.Helpers;
 
-internal struct QueueFamilyIndices
+internal readonly struct QueueFamilyIndices
 {
-    public uint? GraphicsFamily;
-    
-    public uint? PresentFamily;
+    public QueueFamilyIndices(uint graphicsFamily, uint presentFamily)
+    {
+        GraphicsFamily = graphicsFamily;
+        PresentFamily = presentFamily;
+    }
 
-    public readonly bool IsComplete => GraphicsFamily.HasValue && PresentFamily.HasValue;
+    public uint GraphicsFamily { get; }
+    
+    public uint PresentFamily { get; }
+    
+    public bool AreSame => GraphicsFamily == PresentFamily;
 }

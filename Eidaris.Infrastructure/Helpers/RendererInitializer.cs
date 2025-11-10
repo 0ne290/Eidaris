@@ -25,8 +25,25 @@ internal sealed unsafe class RendererInitializer
 
         var surface = CreateSurface(instance);
 
-        var deviceSelector = new PhysicalDeviceSelector(api, instance, khrSurface, surface);
-        var (physicalDevice, queueIndices) = deviceSelector.SelectBestDevice();
+        var physicalDeviceSelector = new PhysicalDeviceSelector(api, instance, khrSurface, surface);
+        var (physicalDevice, queueIndices) = physicalDeviceSelector.SelectBestDevice();
+
+        var logicalDeviceCreator = new LogicalDeviceCreator(api, physicalDevice, queueIndices);
+        var (logicalDevice, graphicsQueue, presentQueue) = logicalDeviceCreator.Create();
+        
+        if (!api.TryGetDeviceExtension(instance, logicalDevice, out KhrSwapchain khrSwapchain))
+            throw new Exception("VK_KHR_swapchain extension not available.");
+
+        var swapchainCreator = new SwapchainCreator(
+            physicalDevice, 
+            logicalDevice, 
+            khrSurface, 
+            surface, 
+            khrSwapchain,
+            queueIndices,
+            (uint)_window.Size.X,
+            (uint)_window.Size.Y);
+        var (swapchain, swapchainFormat, swapchainExtent) = swapchainCreator.Create();
 
         return new RendererInitializationContext
         {
@@ -35,7 +52,14 @@ internal sealed unsafe class RendererInitializer
             KhrSurface = khrSurface,
             Surface = surface,
             PhysicalDevice = physicalDevice,
-            QueueIndices = queueIndices
+            QueueIndices = queueIndices,
+            LogicalDevice = logicalDevice,
+            GraphicsQueue = graphicsQueue,
+            PresentQueue = presentQueue,
+            KhrSwapchain = khrSwapchain,
+            Swapchain = swapchain,
+            SwapchainFormat = swapchainFormat,
+            SwapchainExtent = swapchainExtent
         };
     }
 

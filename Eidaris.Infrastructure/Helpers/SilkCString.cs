@@ -2,7 +2,7 @@ using Silk.NET.Core.Native;
 
 namespace Eidaris.Infrastructure.Helpers;
 
-public readonly ref struct SilkCString : IDisposable
+public readonly struct SilkCString : IDisposable
 {
     public SilkCString(string text) => _ptr = SilkMarshal.StringToPtr(text);
     

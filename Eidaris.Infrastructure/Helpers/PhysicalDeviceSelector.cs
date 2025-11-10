@@ -9,8 +9,6 @@ internal sealed unsafe class PhysicalDeviceSelector
 {
     private struct SwapchainSupportDetails
     {
-        public SurfaceCapabilitiesKHR Capabilities;
-
         public bool FormatsAvailable;
 
         public bool PresentModesAvailable;
@@ -43,7 +41,8 @@ internal sealed unsafe class PhysicalDeviceSelector
 
         foreach (var device in devices)
         {
-            var (score, indices) = EvaluateDevice(device);
+            if (!TryEvaluateDevice(device, out var score, out var indices))
+                continue;
 
             if (score <= bestScore)
                 continue;
@@ -58,23 +57,26 @@ internal sealed unsafe class PhysicalDeviceSelector
             : (bestDevice, bestIndices);
     }
 
-    private (int score, QueueFamilyIndices indices) EvaluateDevice(PhysicalDevice device)
+    private bool TryEvaluateDevice(PhysicalDevice device, out int score, out QueueFamilyIndices indices)
     {
+        score = 0;
+        indices = default;
+
         PhysicalDeviceProperties props;
         _api.GetPhysicalDeviceProperties(device, &props);
         
         PhysicalDeviceFeatures features;
         _api.GetPhysicalDeviceFeatures(device, &features);
 
-        var indices = FindQueueFamilies(device);
-        if (!indices.IsComplete || !CheckDeviceExtensionSupport(device))
-            return (0, indices);
+        var indicesBuilder = FindQueueFamilies(device);
+        if (!indicesBuilder.IsComplete || !CheckDeviceExtensionSupport(device))
+            return false;
 
         var swapchain = QuerySwapchainSupport(device);
         if (!swapchain.IsAdequate)
-            return (0, indices);
+            return false;
 
-        var score = 0;
+        indices = indicesBuilder.Build();
 
         if (props.DeviceType == PhysicalDeviceType.DiscreteGpu) 
             score += DiscreteGpuBonus;
@@ -104,10 +106,10 @@ internal sealed unsafe class PhysicalDeviceSelector
         if (SupportsTimelineSemaphores(device)) 
             score += TimelineSemaphoresBonus;
 
-        return (score, indices);
+        return true;
     }
 
-    private QueueFamilyIndices FindQueueFamilies(PhysicalDevice device)
+    private QueueFamilyIndicesBuilder FindQueueFamilies(PhysicalDevice device)
     {
         uint count = 0;
         _api.GetPhysicalDeviceQueueFamilyProperties(device, &count, null);
@@ -115,7 +117,7 @@ internal sealed unsafe class PhysicalDeviceSelector
         Span<QueueFamilyProperties> families = stackalloc QueueFamilyProperties[(int)count];
         _api.GetPhysicalDeviceQueueFamilyProperties(device, &count, families);
 
-        QueueFamilyIndices indices = new();
+        QueueFamilyIndicesBuilder indices = new();
 
         for (uint i = 0; i < count; i++)
         {
@@ -142,7 +144,7 @@ internal sealed unsafe class PhysicalDeviceSelector
         Span<ExtensionProperties> extensions = stackalloc ExtensionProperties[(int)count];
         _api.EnumerateDeviceExtensionProperties(device, (byte*)null, &count, extensions);
 
-        foreach (var required in RequiredExtensions)
+        foreach (var required in Constants.RequiredDeviceExtensions)
         {
             var found = false;
             
@@ -166,9 +168,6 @@ internal sealed unsafe class PhysicalDeviceSelector
 
     private SwapchainSupportDetails QuerySwapchainSupport(PhysicalDevice device)
     {
-        SurfaceCapabilitiesKHR capabilities;
-        _khrSurface.GetPhysicalDeviceSurfaceCapabilities(device, _surface, &capabilities);
-
         uint formatCount = 0;
         _khrSurface.GetPhysicalDeviceSurfaceFormats(device, _surface, &formatCount, null);
         
@@ -177,7 +176,6 @@ internal sealed unsafe class PhysicalDeviceSelector
 
         return new SwapchainSupportDetails
         {
-            Capabilities = capabilities,
             FormatsAvailable = formatCount > 0,
             PresentModesAvailable = presentModeCount > 0
         };
@@ -223,13 +221,4 @@ internal sealed unsafe class PhysicalDeviceSelector
     private const int ShaderInt64Bonus = 40;
     
     private const int TimelineSemaphoresBonus = 150;
-    
-    private static readonly string[] RequiredExtensions =
-    [
-        "VK_KHR_swapchain",
-        "VK_KHR_timeline_semaphore",
-        "VK_EXT_descriptor_indexing",
-        "VK_KHR_dynamic_rendering",
-        "VK_EXT_memory_budget"
-    ];
 }
