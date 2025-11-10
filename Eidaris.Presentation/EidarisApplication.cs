@@ -15,8 +15,8 @@ internal sealed class EidarisApplication : IEidarisApplication
     public void Run()
     {
         _window.Load += OnLoad;
-        _window.Render += dt => _renderer.DrawFrame(dt);
-        _window.Closing += _renderer.Dispose;
+        /*_window.Render += dt => _renderer.DrawFrame(dt);
+        _window.Closing += _renderer.Dispose;*/
 
         _window.Run();
     }
