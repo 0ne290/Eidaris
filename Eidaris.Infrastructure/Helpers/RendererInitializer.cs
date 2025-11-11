@@ -44,6 +44,21 @@ internal sealed unsafe class RendererInitializer
             (uint)_window.Size.X,
             (uint)_window.Size.Y);
         var (swapchain, swapchainFormat, swapchainExtent) = swapchainCreator.Create();
+        
+        var imageViewsCreator = new SwapchainImageViewsCreator(
+            api,
+            logicalDevice,
+            khrSwapchain,
+            swapchain,
+            swapchainFormat.Format);
+        var (swapchainImages, swapchainImageViews) = imageViewsCreator.Create();
+        
+        var commandPoolCreator = new CommandPoolCreator(api, logicalDevice, queueIndices.GraphicsFamily);
+        var commandPool = commandPoolCreator.CreateCommandPool();
+        var commandBuffers = commandPoolCreator.AllocateCommandBuffers(commandPool, (uint)swapchainImages.Length);
+        
+        var syncObjectsCreator = new SyncObjectsCreator(api, logicalDevice, MaxFramesInFlight);
+        var (imageAvailableSemaphores, renderFinishedSemaphores, inFlightFences) = syncObjectsCreator.Create();
 
         return new RendererInitializationContext
         {
@@ -59,7 +74,14 @@ internal sealed unsafe class RendererInitializer
             KhrSwapchain = khrSwapchain,
             Swapchain = swapchain,
             SwapchainFormat = swapchainFormat,
-            SwapchainExtent = swapchainExtent
+            SwapchainExtent = swapchainExtent,
+            SwapchainImages = swapchainImages,
+            SwapchainImageViews = swapchainImageViews,
+            CommandPool = commandPool,
+            CommandBuffers = commandBuffers,
+            ImageAvailableSemaphores = imageAvailableSemaphores,
+            RenderFinishedSemaphores = renderFinishedSemaphores,
+            InFlightFences = inFlightFences
         };
     }
 
@@ -93,4 +115,6 @@ internal sealed unsafe class RendererInitializer
         _window.VkSurface!.Create<AllocationCallbacks>(instance.ToHandle(), null).ToSurface();
 
     private readonly IWindow _window;
+
+    private const uint MaxFramesInFlight = 2;
 }

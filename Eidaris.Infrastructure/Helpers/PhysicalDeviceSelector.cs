@@ -7,15 +7,21 @@ namespace Eidaris.Infrastructure.Helpers;
 
 internal sealed unsafe class PhysicalDeviceSelector
 {
-    private struct SwapchainSupportDetails
+    private readonly ref struct SwapchainSupportDetails
     {
-        public bool FormatsAvailable;
+        public SwapchainSupportDetails(bool formatsAvailable, bool presentModesAvailable)
+        {
+            _formatsAvailable = formatsAvailable;
+            _presentModesAvailable = presentModesAvailable;
+        }
 
-        public bool PresentModesAvailable;
+        private readonly bool _formatsAvailable;
 
-        public bool IsAdequate => FormatsAvailable && PresentModesAvailable;
+        private readonly bool _presentModesAvailable;
+
+        public bool IsAdequate => _formatsAvailable && _presentModesAvailable;
     }
-    
+
     public PhysicalDeviceSelector(Vk api, Instance instance, KhrSurface khrSurface, SurfaceKHR surface)
     {
         _api = api;
@@ -23,12 +29,12 @@ internal sealed unsafe class PhysicalDeviceSelector
         _khrSurface = khrSurface;
         _surface = surface;
     }
-    
+
     public (PhysicalDevice device, QueueFamilyIndices indices) SelectBestDevice()
     {
         uint deviceCount = 0;
         _api.EnumeratePhysicalDevices(_instance, &deviceCount, null);
-        
+
         if (deviceCount is 0)
             throw new Exception("No Vulkan-compatible GPUs found on this system.");
 
@@ -46,7 +52,7 @@ internal sealed unsafe class PhysicalDeviceSelector
 
             if (score <= bestScore)
                 continue;
-            
+
             bestDevice = device;
             bestIndices = indices;
             bestScore = score;
@@ -64,7 +70,7 @@ internal sealed unsafe class PhysicalDeviceSelector
 
         PhysicalDeviceProperties props;
         _api.GetPhysicalDeviceProperties(device, &props);
-        
+
         PhysicalDeviceFeatures features;
         _api.GetPhysicalDeviceFeatures(device, &features);
 
@@ -78,12 +84,12 @@ internal sealed unsafe class PhysicalDeviceSelector
 
         indices = indicesBuilder.Build();
 
-        if (props.DeviceType == PhysicalDeviceType.DiscreteGpu) 
+        if (props.DeviceType == PhysicalDeviceType.DiscreteGpu)
             score += DiscreteGpuBonus;
 
         PhysicalDeviceMemoryProperties memProps;
         _api.GetPhysicalDeviceMemoryProperties(device, &memProps);
-        
+
         for (var i = 0; i < memProps.MemoryHeapCount; i++)
             if ((memProps.MemoryHeaps[i].Flags & MemoryHeapFlags.DeviceLocalBit) != 0)
                 score += (int)(memProps.MemoryHeaps[i].Size / (1024 * 1024 * 1024)) * VramGbWeight;
@@ -103,7 +109,7 @@ internal sealed unsafe class PhysicalDeviceSelector
         if (features.ShaderInt64)
             score += ShaderInt64Bonus;
 
-        if (SupportsTimelineSemaphores(device)) 
+        if (SupportsTimelineSemaphores(device))
             score += TimelineSemaphoresBonus;
 
         return true;
@@ -147,18 +153,18 @@ internal sealed unsafe class PhysicalDeviceSelector
         foreach (var required in Constants.RequiredDeviceExtensions)
         {
             var found = false;
-            
+
             foreach (var ext in extensions)
             {
                 var extName = SilkMarshal.PtrToString((nint)ext.ExtensionName);
                 if (extName != required)
                     continue;
-                
+
                 found = true;
-                
+
                 break;
             }
-            
+
             if (!found)
                 return false;
         }
@@ -170,55 +176,51 @@ internal sealed unsafe class PhysicalDeviceSelector
     {
         uint formatCount = 0;
         _khrSurface.GetPhysicalDeviceSurfaceFormats(device, _surface, &formatCount, null);
-        
+
         uint presentModeCount = 0;
         _khrSurface.GetPhysicalDeviceSurfacePresentModes(device, _surface, &presentModeCount, null);
 
-        return new SwapchainSupportDetails
-        {
-            FormatsAvailable = formatCount > 0,
-            PresentModesAvailable = presentModeCount > 0
-        };
+        return new SwapchainSupportDetails(formatCount > 0, presentModeCount > 0);
     }
 
     private bool SupportsTimelineSemaphores(PhysicalDevice device)
     {
         PhysicalDeviceTimelineSemaphoreFeatures timelineFeatures = new()
             { SType = StructureType.PhysicalDeviceTimelineSemaphoreFeatures };
-            
+
         PhysicalDeviceFeatures2 features2 = new()
             { SType = StructureType.PhysicalDeviceFeatures2, PNext = &timelineFeatures };
-            
+
         _api.GetPhysicalDeviceFeatures2(device, &features2);
-        
+
         return timelineFeatures.TimelineSemaphore;
     }
-    
+
     private readonly Vk _api;
-    
+
     private readonly Instance _instance;
-    
+
     private readonly KhrSurface _khrSurface;
-    
+
     private readonly SurfaceKHR _surface;
-    
+
     private const int DiscreteGpuBonus = 1000;
-    
+
     private const int VramGbWeight = 1;
-    
+
     private const int AnisotropyBonus = 100;
-    
+
     private const int GeometryShaderBonus = 50;
-    
+
     private const int TessellationBonus = 50;
-    
+
     private const int WideLinesBonus = 20;
-    
+
     private const int FillModeBonus = 20;
-    
+
     private const int MultiDrawBonus = 30;
-    
+
     private const int ShaderInt64Bonus = 40;
-    
+
     private const int TimelineSemaphoresBonus = 150;
 }
