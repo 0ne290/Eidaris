@@ -9,9 +9,12 @@ Eidaris.sln.DotSettings
 
 
 Eidaris.Presentation/Properties
+Eidaris.Infrastructure/Shaders/Compiled
 
 *.json
 **/*.json
+*.spv
+**/*.spv
 !*example.json
 !**/*example.json
 *.pfx

@@ -8,9 +8,29 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="Silk.NET.Vulkan" Version="2.22.0" />
-      <PackageReference Include="Silk.NET.Vulkan.Extensions.KHR" Version="2.22.0" />
-      <PackageReference Include="Silk.NET.Windowing" Version="2.22.0" />
+        <PackageReference Include="Silk.NET.Vulkan" Version="2.22.0"/>
+        <PackageReference Include="Silk.NET.Vulkan.Extensions.KHR" Version="2.22.0"/>
+        <PackageReference Include="Silk.NET.Windowing" Version="2.22.0"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Folder Include="Shaders\Compiled\"/>
+    </ItemGroup>
+
+    <!-- Compile shaders before build -->
+    <Target Name="CompileShaders" BeforeTargets="BeforeBuild">
+        <MakeDir Directories="Shaders/Compiled"/>
+        <Exec Command="glslc Shaders/Source/single_point.vert -o Shaders/Compiled/single_point.vert.spv"
+              ContinueOnError="false"
+              IgnoreExitCode="false"/>
+        <Exec Command="glslc Shaders/Source/single_point.frag -o Shaders/Compiled/single_point.frag.spv"
+              ContinueOnError="false"
+              IgnoreExitCode="false"/>
+    </Target>
+
+    <!-- Copy compiled shaders to output -->
+    <ItemGroup>
+        <None Include="Shaders/Compiled/*.spv" CopyToOutputDirectory="PreserveNewest"/>
     </ItemGroup>
 
 </Project>

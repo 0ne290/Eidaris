@@ -45,4 +45,12 @@ internal readonly ref struct RendererInitializationContext
     public required Semaphore[] RenderFinishedSemaphores { get; init; }
     
     public required Fence[] InFlightFences { get; init; }
+    
+    public required ShaderModule VertShaderModule { get; init; }
+    
+    public required ShaderModule FragShaderModule { get; init; }
+    
+    public required Pipeline Pipeline { get; init; }
+    
+    public required PipelineLayout PipelineLayout { get; init; }
 }

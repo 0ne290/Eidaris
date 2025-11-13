@@ -55,10 +55,23 @@ internal sealed unsafe class RendererInitializer
         
         var commandPoolCreator = new CommandPoolCreator(api, logicalDevice, queueIndices.GraphicsFamily);
         var commandPool = commandPoolCreator.CreateCommandPool();
-        var commandBuffers = commandPoolCreator.AllocateCommandBuffers(commandPool, (uint)swapchainImages.Length);
+        var commandBuffers = commandPoolCreator.AllocateCommandBuffers(commandPool, MaxFramesInFlight);
         
         var syncObjectsCreator = new SyncObjectsCreator(api, logicalDevice, MaxFramesInFlight);
         var (imageAvailableSemaphores, renderFinishedSemaphores, inFlightFences) = syncObjectsCreator.Create();
+        
+        /*
+        _vertShaderModule = LoadShaderModule("Shaders/Compiled/single_point.vert.spv");
+        _fragShaderModule = LoadShaderModule("Shaders/Compiled/single_point.frag.spv");
+        
+        var pipelineCreator = new GraphicsPipelineCreator(
+            _context.Api, 
+            _context.Device, 
+            _context.SwapchainExtent, 
+            _context.SwapchainFormat.Format);
+        
+        (_pipeline, _pipelineLayout) = pipelineCreator.CreatePipeline(_vertShaderModule, _fragShaderModule);
+        */
 
         return new RendererInitializationContext
         {
@@ -113,6 +126,12 @@ internal sealed unsafe class RendererInitializer
 
     private SurfaceKHR CreateSurface(Instance instance) =>
         _window.VkSurface!.Create<AllocationCallbacks>(instance.ToHandle(), null).ToSurface();
+    
+    private ShaderModule LoadShaderModule(string path, ShaderModuleCreator creator)
+    {
+        var code = File.ReadAllBytes(path);
+        return creator.CreateShaderModule(code);
+    }
 
     private readonly IWindow _window;
 
