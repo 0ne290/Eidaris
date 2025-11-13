@@ -11,7 +11,7 @@ internal sealed unsafe class RendererInitializer
     {
         _window = window;
     }
-    
+
     public RendererInitializationContext Initialize()
     {
         if (_window.VkSurface is null)
@@ -30,21 +30,21 @@ internal sealed unsafe class RendererInitializer
 
         var logicalDeviceCreator = new LogicalDeviceCreator(api, physicalDevice, queueIndices);
         var (logicalDevice, graphicsQueue, presentQueue) = logicalDeviceCreator.Create();
-        
+
         if (!api.TryGetDeviceExtension(instance, logicalDevice, out KhrSwapchain khrSwapchain))
             throw new Exception("VK_KHR_swapchain extension not available.");
 
         var swapchainCreator = new SwapchainCreator(
-            physicalDevice, 
-            logicalDevice, 
-            khrSurface, 
-            surface, 
+            physicalDevice,
+            logicalDevice,
+            khrSurface,
+            surface,
             khrSwapchain,
             queueIndices,
             (uint)_window.Size.X,
             (uint)_window.Size.Y);
         var (swapchain, swapchainFormat, swapchainExtent) = swapchainCreator.Create();
-        
+
         var imageViewsCreator = new SwapchainImageViewsCreator(
             api,
             logicalDevice,
@@ -52,26 +52,21 @@ internal sealed unsafe class RendererInitializer
             swapchain,
             swapchainFormat.Format);
         var (swapchainImages, swapchainImageViews) = imageViewsCreator.Create();
-        
+
         var commandPoolCreator = new CommandPoolCreator(api, logicalDevice, queueIndices.GraphicsFamily);
         var commandPool = commandPoolCreator.CreateCommandPool();
-        var commandBuffers = commandPoolCreator.AllocateCommandBuffers(commandPool, MaxFramesInFlight);
-        
-        var syncObjectsCreator = new SyncObjectsCreator(api, logicalDevice, MaxFramesInFlight);
+        var commandBuffers = commandPoolCreator.AllocateCommandBuffers(commandPool, Constants.MaxFramesInFlight);
+
+        var syncObjectsCreator = new SyncObjectsCreator(api, logicalDevice, Constants.MaxFramesInFlight);
         var (imageAvailableSemaphores, renderFinishedSemaphores, inFlightFences) = syncObjectsCreator.Create();
-        
-        /*
-        _vertShaderModule = LoadShaderModule("Shaders/Compiled/single_point.vert.spv");
-        _fragShaderModule = LoadShaderModule("Shaders/Compiled/single_point.frag.spv");
-        
-        var pipelineCreator = new GraphicsPipelineCreator(
-            _context.Api, 
-            _context.Device, 
-            _context.SwapchainExtent, 
-            _context.SwapchainFormat.Format);
-        
-        (_pipeline, _pipelineLayout) = pipelineCreator.CreatePipeline(_vertShaderModule, _fragShaderModule);
-        */
+
+        var shaderModuleCreator = new ShaderModuleCreator(api, logicalDevice);
+        var vertexShaderModule = LoadShaderModule("Shaders/Compiled/single_point.vert.spv", shaderModuleCreator);
+        var fragmentShaderModule = LoadShaderModule("Shaders/Compiled/single_point.frag.spv", shaderModuleCreator);
+
+        var pipelineCreator = new PipelineCreator(api, logicalDevice, swapchainExtent, swapchainFormat.Format);
+        var (pipeline, pipelineLayout) = pipelineCreator.Create(vertexShaderModule, fragmentShaderModule);
+
 
         return new RendererInitializationContext
         {
@@ -94,7 +89,11 @@ internal sealed unsafe class RendererInitializer
             CommandBuffers = commandBuffers,
             ImageAvailableSemaphores = imageAvailableSemaphores,
             RenderFinishedSemaphores = renderFinishedSemaphores,
-            InFlightFences = inFlightFences
+            InFlightFences = inFlightFences,
+            VertexShaderModule = vertexShaderModule,
+            FragmentShaderModule = fragmentShaderModule,
+            Pipeline = pipeline,
+            PipelineLayout = pipelineLayout
         };
     }
 
@@ -126,7 +125,7 @@ internal sealed unsafe class RendererInitializer
 
     private SurfaceKHR CreateSurface(Instance instance) =>
         _window.VkSurface!.Create<AllocationCallbacks>(instance.ToHandle(), null).ToSurface();
-    
+
     private ShaderModule LoadShaderModule(string path, ShaderModuleCreator creator)
     {
         var code = File.ReadAllBytes(path);
@@ -134,6 +133,4 @@ internal sealed unsafe class RendererInitializer
     }
 
     private readonly IWindow _window;
-
-    private const uint MaxFramesInFlight = 2;
 }

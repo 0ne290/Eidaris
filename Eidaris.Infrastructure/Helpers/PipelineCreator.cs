@@ -2,9 +2,9 @@ using Silk.NET.Vulkan;
 
 namespace Eidaris.Infrastructure.Helpers;
 
-internal sealed unsafe class GraphicsPipelineCreator
+internal sealed unsafe class PipelineCreator
 {
-    public GraphicsPipelineCreator(Vk api, Device device, Extent2D extent, Format colorFormat)
+    public PipelineCreator(Vk api, Device device, Extent2D extent, Format colorFormat)
     {
         _api = api;
         _device = device;
@@ -12,7 +12,7 @@ internal sealed unsafe class GraphicsPipelineCreator
         _colorFormat = colorFormat;
     }
 
-    public (Pipeline pipeline, PipelineLayout layout) CreatePipeline(ShaderModule vertShader, ShaderModule fragShader)
+    public (Pipeline pipeline, PipelineLayout layout) Create(ShaderModule vertShader, ShaderModule fragShader)
     {
         var layout = CreatePipelineLayout();
         var pipeline = CreateGraphicsPipeline(vertShader, fragShader, layout);

@@ -10,4 +10,6 @@ internal static class Constants
         "VK_KHR_dynamic_rendering",
         "VK_EXT_memory_budget"
     ];
+    
+    public const uint MaxFramesInFlight = 2;
 }

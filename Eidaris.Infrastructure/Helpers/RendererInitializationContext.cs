@@ -4,7 +4,7 @@ using Semaphore = Silk.NET.Vulkan.Semaphore;
 
 namespace Eidaris.Infrastructure.Helpers;
 
-internal readonly ref struct RendererInitializationContext
+internal record RendererInitializationContext
 {
     public required Vk Api { get; init; }
     
@@ -46,9 +46,9 @@ internal readonly ref struct RendererInitializationContext
     
     public required Fence[] InFlightFences { get; init; }
     
-    public required ShaderModule VertShaderModule { get; init; }
+    public required ShaderModule VertexShaderModule { get; init; }
     
-    public required ShaderModule FragShaderModule { get; init; }
+    public required ShaderModule FragmentShaderModule { get; init; }
     
     public required Pipeline Pipeline { get; init; }
     
