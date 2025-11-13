@@ -155,11 +155,12 @@ public sealed unsafe class Renderer : IRenderer
         var vertex = point.Vertex;
         var fragment = point.Fragment;
 
+        // TODO: не дублирование ли это PipelineCreator.CreatePipelineLayout?
         _initializationContext.Api.CmdPushConstants(commandBuffer, _initializationContext.PipelineLayout,
             ShaderStageFlags.VertexBit, 0, (uint)sizeof(PointRenderData.VertexPushConstants), &vertex);
-
         _initializationContext.Api.CmdPushConstants(commandBuffer, _initializationContext.PipelineLayout,
-            ShaderStageFlags.FragmentBit, 12, (uint)sizeof(PointRenderData.FragmentPushConstants), &fragment);
+            ShaderStageFlags.FragmentBit, (uint)sizeof(PointRenderData.VertexPushConstants),
+            (uint)sizeof(PointRenderData.FragmentPushConstants), &fragment);
     }
 
     private void SubmitCommandBuffer(CommandBuffer commandBuffer)

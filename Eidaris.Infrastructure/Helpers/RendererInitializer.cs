@@ -126,7 +126,7 @@ internal sealed unsafe class RendererInitializer
     private SurfaceKHR CreateSurface(Instance instance) =>
         _window.VkSurface!.Create<AllocationCallbacks>(instance.ToHandle(), null).ToSurface();
 
-    private ShaderModule LoadShaderModule(string path, ShaderModuleCreator creator)
+    private static ShaderModule LoadShaderModule(string path, ShaderModuleCreator creator)
     {
         var code = File.ReadAllBytes(path);
         return creator.CreateShaderModule(code);
