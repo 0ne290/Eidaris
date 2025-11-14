@@ -1,29 +1,52 @@
+using Eidaris.Infrastructure;
 using Eidaris.Infrastructure.Interfaces;
 using Eidaris.Presentation.Interfaces;
+using Silk.NET.Maths;
 using Silk.NET.Windowing;
 
 namespace Eidaris.Presentation;
 
 internal sealed class EidarisApplication : IEidarisApplication
 {
-    public EidarisApplication(IWindow window, IRenderer renderer)
+    private readonly IWindow _window;
+    private readonly IRendererFactory _rendererFactory;
+    private IRenderer? _renderer;
+
+    public EidarisApplication(IWindow window, IRendererFactory rendererFactory)
     {
         _window = window;
-        _renderer = renderer;
+        _rendererFactory = rendererFactory;
     }
 
     public void Run()
     {
         _window.Load += OnLoad;
-        /*_window.Render += dt => _renderer.DrawFrame(dt);
-        _window.Closing += _renderer.Dispose;*/
+        _window.Render += OnRender;
+        _window.Closing += OnClosing;
 
         _window.Run();
     }
 
-    private void OnLoad() => _renderer.Initialize(_window);
+    private void OnLoad()
+    {
+        _renderer = _rendererFactory.Create();
+        _renderer.Initialize(_window);
+    }
 
-    private readonly IWindow _window;
-    
-    private readonly IRenderer _renderer;
+    private void OnRender(double deltaTime)
+    {
+        var point = new PointRenderData(
+            position: new Vector2D<float>(0.0f, 0.0f),
+            pointSize: 20.0f,
+            color: new Vector4D<float>(1.0f, 1.0f, 1.0f, 1.0f)
+        );
+        
+        _renderer!.DrawFrame(in point);
+    }
+
+    private void OnClosing()
+    {
+        _renderer?.Dispose();
+        _renderer = null;
+    }
 }

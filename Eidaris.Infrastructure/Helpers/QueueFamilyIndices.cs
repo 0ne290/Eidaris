@@ -1,6 +1,6 @@
 namespace Eidaris.Infrastructure.Helpers;
 
-internal readonly struct QueueFamilyIndices
+internal record QueueFamilyIndices
 {
     public QueueFamilyIndices(uint graphicsFamily, uint presentFamily)
     {

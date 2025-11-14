@@ -13,7 +13,7 @@ public sealed unsafe class Renderer : IRenderer
         _initializationContext = initializer.Initialize();
     }
 
-    public void DrawFrame(PointRenderData point)
+    public void DrawFrame(in PointRenderData point)
     {
         var fence = _initializationContext.InFlightFences[_currentFrame];
 
@@ -45,7 +45,7 @@ public sealed unsafe class Renderer : IRenderer
         _currentFrame = (_currentFrame + 1) % Constants.MaxFramesInFlight;
     }
 
-    private void RecordCommandBuffer(CommandBuffer commandBuffer, uint imageIndex, PointRenderData point)
+    private void RecordCommandBuffer(in CommandBuffer commandBuffer, in uint imageIndex, in PointRenderData point)
     {
         var beginInfo = new CommandBufferBeginInfo
         {
@@ -74,8 +74,8 @@ public sealed unsafe class Renderer : IRenderer
         _initializationContext.Api.EndCommandBuffer(commandBuffer);
     }
 
-    private void TransitionImageLayout(CommandBuffer commandBuffer, Image image,
-        ImageLayout oldLayout, ImageLayout newLayout)
+    private void TransitionImageLayout(in CommandBuffer commandBuffer, in Image image,
+        in ImageLayout oldLayout, in ImageLayout newLayout)
     {
         var barrier = new ImageMemoryBarrier
         {
@@ -120,7 +120,7 @@ public sealed unsafe class Renderer : IRenderer
             &barrier);
     }
 
-    private void BeginRendering(CommandBuffer commandBuffer, uint imageIndex)
+    private void BeginRendering(in CommandBuffer commandBuffer, in uint imageIndex)
     {
         var clearColor = new ClearColorValue(0.0f, 0.0f, 0.0f, 1.0f);
 
@@ -150,7 +150,7 @@ public sealed unsafe class Renderer : IRenderer
         _initializationContext.Api.CmdBeginRendering(commandBuffer, &renderingInfo);
     }
 
-    private void PushConstants(CommandBuffer commandBuffer, PointRenderData point)
+    private void PushConstants(in CommandBuffer commandBuffer, in PointRenderData point)
     {
         var vertex = point.Vertex;
         var fragment = point.Fragment;
@@ -206,7 +206,53 @@ public sealed unsafe class Renderer : IRenderer
         _initializationContext.KhrSwapchain.QueuePresent(_initializationContext.PresentQueue, &presentInfo);
     }
 
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+
+        var api = _initializationContext.Api;
+        var device = _initializationContext.LogicalDevice;
+
+        api.DeviceWaitIdle(device);
+
+        foreach (var fence in _initializationContext.InFlightFences)
+            api.DestroyFence(device, fence, null);
+
+        foreach (var semaphore in _initializationContext.RenderFinishedSemaphores)
+            api.DestroySemaphore(device, semaphore, null);
+
+        foreach (var semaphore in _initializationContext.ImageAvailableSemaphores)
+            api.DestroySemaphore(device, semaphore, null);
+
+        api.DestroyCommandPool(device, _initializationContext.CommandPool, null);
+
+        api.DestroyPipeline(device, _initializationContext.Pipeline, null);
+        api.DestroyPipelineLayout(device, _initializationContext.PipelineLayout, null);
+
+        api.DestroyShaderModule(device, _initializationContext.FragmentShaderModule, null);
+        api.DestroyShaderModule(device, _initializationContext.VertexShaderModule, null);
+
+        foreach (var imageView in _initializationContext.SwapchainImageViews)
+            api.DestroyImageView(device, imageView, null);
+
+        _initializationContext.KhrSwapchain.DestroySwapchain(device, _initializationContext.Swapchain, null);
+
+        api.DestroyDevice(device, null);
+
+        _initializationContext.KhrSurface.DestroySurface(_initializationContext.Instance,
+            _initializationContext.Surface, null);
+
+        api.DestroyInstance(_initializationContext.Instance, null);
+
+        api.Dispose();
+
+        _disposed = true;
+    }
+
     private RendererInitializationContext _initializationContext = null!;
 
     private uint _currentFrame;
+    
+    private bool _disposed;
 }

@@ -7,7 +7,7 @@ namespace Eidaris.Infrastructure.Helpers;
 
 internal sealed unsafe class PhysicalDeviceSelector
 {
-    private readonly ref struct SwapchainSupportDetails
+    private record SwapchainSupportDetails
     {
         public SwapchainSupportDetails(bool formatsAvailable, bool presentModesAvailable)
         {

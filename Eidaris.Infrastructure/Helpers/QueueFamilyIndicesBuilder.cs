@@ -1,18 +1,17 @@
 namespace Eidaris.Infrastructure.Helpers;
 
-internal struct QueueFamilyIndicesBuilder
+internal record QueueFamilyIndicesBuilder
 {
     public uint? GraphicsFamily;
-    
+
     public uint? PresentFamily;
 
-    public readonly bool IsComplete => GraphicsFamily.HasValue && PresentFamily.HasValue;
+    public bool IsComplete => GraphicsFamily.HasValue && PresentFamily.HasValue;
 
-    public readonly QueueFamilyIndices Build()
+    public QueueFamilyIndices Build()
     {
-        if (!IsComplete)
-            throw new InvalidOperationException("Queue family indices are incomplete.");
-
-        return new QueueFamilyIndices(GraphicsFamily!.Value, PresentFamily!.Value);
+        return !IsComplete
+            ? throw new InvalidOperationException("Queue family indices are incomplete.")
+            : new QueueFamilyIndices(GraphicsFamily!.Value, PresentFamily!.Value);
     }
 }

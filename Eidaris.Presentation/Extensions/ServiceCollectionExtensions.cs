@@ -16,7 +16,7 @@ public static class ServiceCollectionExtensions
             Title = "Eidaris",
             Size = new Vector2D<int>(2560, 1440)
         }));
-        services.AddSingleton<IRenderer, Renderer>();
+        services.AddSingleton<IRendererFactory, RendererFactory>();
         services.AddSingleton<IEidarisApplication, EidarisApplication>();
     }
 }
