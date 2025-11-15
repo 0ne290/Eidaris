@@ -20,11 +20,13 @@ public sealed unsafe class Renderer : IRenderer
         _initializationContext.Api.WaitForFences(_initializationContext.LogicalDevice, 1, fence, true, ulong.MaxValue);
 
         uint imageIndex;
+        
+        var acquireSemaphore = _initializationContext.ImageAvailableSemaphores[_currentFrame];
         var result = _initializationContext.KhrSwapchain.AcquireNextImage(
             _initializationContext.LogicalDevice,
             _initializationContext.Swapchain,
             ulong.MaxValue,
-            _initializationContext.ImageAvailableSemaphores[_currentFrame],
+            acquireSemaphore,
             default,
             &imageIndex);
 
@@ -38,7 +40,7 @@ public sealed unsafe class Renderer : IRenderer
 
         RecordCommandBuffer(commandBuffer, imageIndex, point);
 
-        SubmitCommandBuffer(commandBuffer);
+        SubmitCommandBuffer(commandBuffer, imageIndex);
 
         PresentFrame(imageIndex);
 
@@ -155,7 +157,6 @@ public sealed unsafe class Renderer : IRenderer
         var vertex = point.Vertex;
         var fragment = point.Fragment;
 
-        // TODO: не дублирование ли это PipelineCreator.CreatePipelineLayout?
         _initializationContext.Api.CmdPushConstants(commandBuffer, _initializationContext.PipelineLayout,
             ShaderStageFlags.VertexBit, 0, (uint)sizeof(PointRenderData.VertexPushConstants), &vertex);
         _initializationContext.Api.CmdPushConstants(commandBuffer, _initializationContext.PipelineLayout,
@@ -163,10 +164,10 @@ public sealed unsafe class Renderer : IRenderer
             (uint)sizeof(PointRenderData.FragmentPushConstants), &fragment);
     }
 
-    private void SubmitCommandBuffer(CommandBuffer commandBuffer)
+    private void SubmitCommandBuffer(CommandBuffer commandBuffer, uint imageIndex)
     {
         var waitSemaphore = _initializationContext.ImageAvailableSemaphores[_currentFrame];
-        var signalSemaphore = _initializationContext.RenderFinishedSemaphores[_currentFrame];
+        var signalSemaphore = _initializationContext.RenderFinishedSemaphores[imageIndex];
         var waitStage = PipelineStageFlags.ColorAttachmentOutputBit;
 
         var submitInfo = new SubmitInfo
@@ -190,7 +191,7 @@ public sealed unsafe class Renderer : IRenderer
 
     private void PresentFrame(uint imageIndex)
     {
-        var signalSemaphore = _initializationContext.RenderFinishedSemaphores[_currentFrame];
+        var signalSemaphore = _initializationContext.RenderFinishedSemaphores[imageIndex];
         var swapchain = _initializationContext.Swapchain;
 
         var presentInfo = new PresentInfoKHR

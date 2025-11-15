@@ -16,6 +16,8 @@ public record struct PointRenderData
 
         public Vector2D<float> Position { get; }
         public float PointSize { get; }
+        
+        public float _padding;
     }
 
     [StructLayout(LayoutKind.Sequential)]

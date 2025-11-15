@@ -26,6 +26,12 @@ internal sealed unsafe class LogicalDeviceCreator
         var queueCreateInfos = CreateQueueCreateInfos(uniqueQueueFamilies);
         var enabledFeatures = GetEnabledFeatures();
 
+        var dynamicRenderingFeature = new PhysicalDeviceDynamicRenderingFeatures
+        {
+            SType = StructureType.PhysicalDeviceDynamicRenderingFeatures,
+            DynamicRendering = true
+        };
+
         var extensionCount = Constants.RequiredDeviceExtensions.Length;
         Span<SilkCString> extensionStrings = stackalloc SilkCString[extensionCount];
         var extensionPointers = stackalloc byte*[extensionCount];
@@ -43,6 +49,7 @@ internal sealed unsafe class LogicalDeviceCreator
                 var deviceCreateInfo = new DeviceCreateInfo
                 {
                     SType = StructureType.DeviceCreateInfo,
+                    PNext = &dynamicRenderingFeature,
                     QueueCreateInfoCount = (uint)queueCreateInfos.Length,
                     PQueueCreateInfos = pQueueCreateInfos,
                     PEnabledFeatures = &enabledFeatures,
@@ -57,7 +64,6 @@ internal sealed unsafe class LogicalDeviceCreator
         }
         finally
         {
-            // Cleanup всегда выполняется
             for (var i = 0; i < extensionCount; i++)
                 extensionStrings[i].Dispose();
         }

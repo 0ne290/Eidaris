@@ -63,7 +63,8 @@ internal sealed unsafe class RendererInitializer
             _commandPool = commandPoolCreator.CreateCommandPool();
             var commandBuffers = commandPoolCreator.AllocateCommandBuffers(_commandPool, Constants.MaxFramesInFlight);
 
-            var syncObjectsCreator = new SyncObjectsCreator(_api, _logicalDevice, Constants.MaxFramesInFlight);
+            // Семафоры по количеству swapchain images для правильной синхронизации
+            var syncObjectsCreator = new SyncObjectsCreator(_api, _logicalDevice, (uint)swapchainImages.Length);
             var (imageAvailableSemaphores, renderFinishedSemaphores, inFlightFences) = syncObjectsCreator.Create();
             _imageAvailableSemaphores = imageAvailableSemaphores;
             _renderFinishedSemaphores = renderFinishedSemaphores;
@@ -106,6 +107,7 @@ internal sealed unsafe class RendererInitializer
                 PipelineLayout = _pipelineLayout
             };
 
+            // Ownership передан в context, обнуляем поля
             _api = null;
             _khrSurface = null;
             _khrSwapchain = null;
@@ -144,14 +146,14 @@ internal sealed unsafe class RendererInitializer
         using var debugExt = new SilkCString("VK_EXT_debug_utils");
         var extCount = windowExtCount + 1;
         var extensions = stackalloc byte*[(int)extCount];
-
+        
         for (var i = 0; i < windowExtCount; i++)
             extensions[i] = windowExtensions[i];
         extensions[windowExtCount] = debugExt;
-
+        
         using var validationLayer = new SilkCString("VK_LAYER_KHRONOS_validation");
         var layerPtr = (byte*)validationLayer;
-
+        
         var instanceInfo = new InstanceCreateInfo
         {
             SType = StructureType.InstanceCreateInfo,
