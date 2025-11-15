@@ -11,7 +11,7 @@ public static class ServiceCollectionExtensions
 {
     public static void Compose(this IServiceCollection services)
     {
-        services.AddSingleton<IWindow>(_ => Window.Create(WindowOptions.Default with
+        services.AddSingleton<IWindow>(_ => Window.Create(WindowOptions.DefaultVulkan with
         {
             Title = "Eidaris",
             Size = new Vector2D<int>(2560, 1440)

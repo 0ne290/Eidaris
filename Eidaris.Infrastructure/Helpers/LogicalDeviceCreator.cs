@@ -24,38 +24,42 @@ internal sealed unsafe class LogicalDeviceCreator
     {
         var uniqueQueueFamilies = GetUniqueQueueFamilies();
         var queueCreateInfos = CreateQueueCreateInfos(uniqueQueueFamilies);
-
         var enabledFeatures = GetEnabledFeatures();
-        
+
         var extensionCount = Constants.RequiredDeviceExtensions.Length;
         Span<SilkCString> extensionStrings = stackalloc SilkCString[extensionCount];
         var extensionPointers = stackalloc byte*[extensionCount];
-        
-        for (var i = 0; i < extensionCount; i++)
-        {
-            extensionStrings[i] = new SilkCString(Constants.RequiredDeviceExtensions[i]);
-            extensionPointers[i] = extensionStrings[i];
-        }
 
-        fixed (DeviceQueueCreateInfo* pQueueCreateInfos = queueCreateInfos)
+        try
         {
-            var deviceCreateInfo = new DeviceCreateInfo
+            for (var i = 0; i < extensionCount; i++)
             {
-                SType = StructureType.DeviceCreateInfo,
-                QueueCreateInfoCount = (uint)queueCreateInfos.Length,
-                PQueueCreateInfos = pQueueCreateInfos,
-                PEnabledFeatures = &enabledFeatures,
-                EnabledExtensionCount = (uint)extensionCount,
-                PpEnabledExtensionNames = extensionPointers
-            };
+                extensionStrings[i] = new SilkCString(Constants.RequiredDeviceExtensions[i]);
+                extensionPointers[i] = extensionStrings[i];
+            }
 
-            if (_api.CreateDevice(_physicalDevice, &deviceCreateInfo, null, out var device) != Result.Success)
-                throw new Exception("Failed to create logical device.");
+            fixed (DeviceQueueCreateInfo* pQueueCreateInfos = queueCreateInfos)
+            {
+                var deviceCreateInfo = new DeviceCreateInfo
+                {
+                    SType = StructureType.DeviceCreateInfo,
+                    QueueCreateInfoCount = (uint)queueCreateInfos.Length,
+                    PQueueCreateInfos = pQueueCreateInfos,
+                    PEnabledFeatures = &enabledFeatures,
+                    EnabledExtensionCount = (uint)extensionCount,
+                    PpEnabledExtensionNames = extensionPointers
+                };
 
-            foreach (var str in extensionStrings)
-                str.Dispose();
-
-            return device;
+                return _api.CreateDevice(_physicalDevice, &deviceCreateInfo, null, out var device) != Result.Success
+                    ? throw new Exception("Failed to create logical device.")
+                    : device;
+            }
+        }
+        finally
+        {
+            // Cleanup всегда выполняется
+            for (var i = 0; i < extensionCount; i++)
+                extensionStrings[i].Dispose();
         }
     }
 
