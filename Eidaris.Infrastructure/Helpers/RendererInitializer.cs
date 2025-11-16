@@ -1,5 +1,6 @@
 using Silk.NET.Core;
 using Silk.NET.Vulkan;
+using Silk.NET.Vulkan.Extensions.EXT;
 using Silk.NET.Vulkan.Extensions.KHR;
 using Silk.NET.Windowing;
 using Semaphore = Silk.NET.Vulkan.Semaphore;
@@ -22,6 +23,11 @@ internal sealed unsafe class RendererInitializer
 
             _api = Vk.GetApi();
             _instance = CreateInstance();
+            
+#if DEBUG
+            if (_api.TryGetInstanceExtension(_instance, out _debugUtils))
+                _debugMessenger = DebugMessengerCreator.Create(_api, _instance, _debugUtils!);
+#endif
 
             if (!_api.TryGetInstanceExtension(_instance, out _khrSurface))
                 throw new Exception("VK_KHR_surface extension not available.");
@@ -62,13 +68,34 @@ internal sealed unsafe class RendererInitializer
             var commandPoolCreator = new CommandPoolCreator(_api, _logicalDevice, queueIndices.GraphicsFamily);
             _commandPool = commandPoolCreator.CreateCommandPool();
             var commandBuffers = commandPoolCreator.AllocateCommandBuffers(_commandPool, Constants.MaxFramesInFlight);
-
-            // Семафоры по количеству swapchain images для правильной синхронизации
+            
             var syncObjectsCreator = new SyncObjectsCreator(_api, _logicalDevice, (uint)swapchainImages.Length);
             var (imageAvailableSemaphores, renderFinishedSemaphores, inFlightFences) = syncObjectsCreator.Create();
             _imageAvailableSemaphores = imageAvailableSemaphores;
             _renderFinishedSemaphores = renderFinishedSemaphores;
             _inFlightFences = inFlightFences;
+            
+#if DEBUG
+            var debugNamer = new VulkanDebugNamer(_logicalDevice, _debugUtils);
+            
+            debugNamer.NameSwapchain(_swapchain, "MainSwapchain");
+            debugNamer.NameCommandPool(_commandPool, "GraphicsCommandPool");
+            
+            for (var i = 0; i < commandBuffers.Length; i++)
+                debugNamer.NameCommandBuffer(commandBuffers[i], $"CommandBuffer_Frame{i}");
+            
+            for (var i = 0; i < imageAvailableSemaphores.Length; i++)
+                debugNamer.NameSemaphore(imageAvailableSemaphores[i], $"ImageAvailable_Frame{i}");
+            
+            for (var i = 0; i < renderFinishedSemaphores.Length; i++)
+                debugNamer.NameSemaphore(renderFinishedSemaphores[i], $"RenderFinished_Frame{i}");
+            
+            for (var i = 0; i < inFlightFences.Length; i++)
+                debugNamer.NameFence(inFlightFences[i], $"InFlightFence_Frame{i}");
+            
+            for (var i = 0; i < swapchainImageViews.Length; i++)
+                debugNamer.NameImageView(swapchainImageViews[i], $"SwapchainImageView_{i}");
+#endif
 
             var shaderModuleCreator = new ShaderModuleCreator(_api, _logicalDevice);
             _vertexShaderModule = LoadShaderModule("Shaders/Compiled/single_point.vert.spv", shaderModuleCreator);
@@ -78,11 +105,20 @@ internal sealed unsafe class RendererInitializer
             var (pipeline, pipelineLayout) = pipelineCreator.Create(_vertexShaderModule, _fragmentShaderModule);
             _pipeline = pipeline;
             _pipelineLayout = pipelineLayout;
+            
+#if DEBUG
+            debugNamer.NamePipeline(_pipeline, "PointRenderingPipeline");
+#endif
 
             var context = new RendererInitializationContext
             {
                 Api = _api,
                 Instance = _instance,
+#if DEBUG
+                DebugUtils = _debugUtils,
+                DebugMessenger = _debugMessenger,
+                DebugNamer = debugNamer,
+#endif
                 KhrSurface = _khrSurface!,
                 Surface = _surface,
                 PhysicalDevice = physicalDevice,
@@ -109,6 +145,7 @@ internal sealed unsafe class RendererInitializer
 
             // Ownership передан в context, обнуляем поля
             _api = null;
+            _debugUtils = null;
             _khrSurface = null;
             _khrSwapchain = null;
             _swapchainImageViews = null;
@@ -154,9 +191,26 @@ internal sealed unsafe class RendererInitializer
         using var validationLayer = new SilkCString("VK_LAYER_KHRONOS_validation");
         var layerPtr = (byte*)validationLayer;
         
+        // Включаем все validation features для максимальных логов
+        var validationFeatures = stackalloc ValidationFeatureEnableEXT[]
+        {
+            ValidationFeatureEnableEXT.BestPracticesExt,
+            ValidationFeatureEnableEXT.SynchronizationValidationExt,
+            ValidationFeatureEnableEXT.GpuAssistedExt,
+            ValidationFeatureEnableEXT.DebugPrintfExt
+        };
+        
+        var validationFeaturesInfo = new ValidationFeaturesEXT
+        {
+            SType = StructureType.ValidationFeaturesExt,
+            EnabledValidationFeatureCount = 4,
+            PEnabledValidationFeatures = validationFeatures
+        };
+        
         var instanceInfo = new InstanceCreateInfo
         {
             SType = StructureType.InstanceCreateInfo,
+            PNext = &validationFeaturesInfo,
             PApplicationInfo = &appInfo,
             EnabledExtensionCount = extCount,
             PpEnabledExtensionNames = extensions,
@@ -235,6 +289,11 @@ internal sealed unsafe class RendererInitializer
 
         if (_khrSurface is not null && _surface.Handle != 0)
             _khrSurface.DestroySurface(_instance, _surface, null);
+        
+#if DEBUG
+        if (_debugUtils is not null && _debugMessenger.Handle != 0)
+            _debugUtils.DestroyDebugUtilsMessenger(_instance, _debugMessenger, null);
+#endif
 
         if (_instance.Handle != 0)
             _api.DestroyInstance(_instance, null);
@@ -248,6 +307,12 @@ internal sealed unsafe class RendererInitializer
     private Vk? _api;
 
     private Instance _instance;
+    
+#if DEBUG
+    private ExtDebugUtils? _debugUtils;
+
+    private DebugUtilsMessengerEXT _debugMessenger;
+#endif
 
     private KhrSurface? _khrSurface;
 

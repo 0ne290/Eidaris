@@ -1,4 +1,5 @@
 using Silk.NET.Vulkan;
+using Silk.NET.Vulkan.Extensions.EXT;
 using Silk.NET.Vulkan.Extensions.KHR;
 using Semaphore = Silk.NET.Vulkan.Semaphore;
 
@@ -7,6 +8,14 @@ namespace Eidaris.Infrastructure.Helpers;
 internal record RendererInitializationContext
 {
     public required Vk Api { get; init; }
+    
+#if DEBUG
+    public ExtDebugUtils? DebugUtils { get; init; }
+    
+    public DebugUtilsMessengerEXT DebugMessenger { get; init; }
+    
+    public required VulkanDebugNamer DebugNamer { get; init; }
+#endif
     
     public required Instance Instance { get; init; }
     

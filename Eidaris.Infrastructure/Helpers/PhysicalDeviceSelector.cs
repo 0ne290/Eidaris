@@ -42,7 +42,7 @@ internal sealed unsafe class PhysicalDeviceSelector
         _api.EnumeratePhysicalDevices(_instance, &deviceCount, devices);
 
         PhysicalDevice bestDevice = default;
-        QueueFamilyIndices bestIndices = default;
+        QueueFamilyIndices bestIndices = null!;
         var bestScore = -1;
 
         foreach (var device in devices)
@@ -66,7 +66,7 @@ internal sealed unsafe class PhysicalDeviceSelector
     private bool TryEvaluateDevice(PhysicalDevice device, out int score, out QueueFamilyIndices indices)
     {
         score = 0;
-        indices = default;
+        indices = null!;
 
         PhysicalDeviceProperties props;
         _api.GetPhysicalDeviceProperties(device, &props);

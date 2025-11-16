@@ -17,7 +17,7 @@ public sealed unsafe class Renderer : IRenderer
     {
         var fence = _initializationContext.InFlightFences[_currentFrame];
 
-        _initializationContext.Api.WaitForFences(_initializationContext.LogicalDevice, 1, fence, true, ulong.MaxValue);
+        _initializationContext.Api.WaitForFences(_initializationContext.LogicalDevice, 1, in fence, true, ulong.MaxValue);
 
         uint imageIndex;
         
@@ -33,7 +33,7 @@ public sealed unsafe class Renderer : IRenderer
         if (result != Result.Success)
             throw new Exception($"Failed to acquire swapchain image: {result}");
 
-        _initializationContext.Api.ResetFences(_initializationContext.LogicalDevice, 1, fence);
+        _initializationContext.Api.ResetFences(_initializationContext.LogicalDevice, 1, in fence);
 
         var commandBuffer = _initializationContext.CommandBuffers[_currentFrame];
         _initializationContext.Api.ResetCommandBuffer(commandBuffer, 0);
@@ -105,7 +105,7 @@ public sealed unsafe class Renderer : IRenderer
             case ImageLayout.Undefined when newLayout == ImageLayout.ColorAttachmentOptimal:
                 barrier.SrcAccessMask = 0;
                 barrier.DstAccessMask = AccessFlags.ColorAttachmentWriteBit;
-                srcStage = PipelineStageFlags.TopOfPipeBit;
+                srcStage = PipelineStageFlags.ColorAttachmentOutputBit;  // ✅ ИСПРАВЛЕНО
                 dstStage = PipelineStageFlags.ColorAttachmentOutputBit;
                 break;
             case ImageLayout.ColorAttachmentOptimal when newLayout == ImageLayout.PresentSrcKhr:
@@ -243,6 +243,17 @@ public sealed unsafe class Renderer : IRenderer
 
         _initializationContext.KhrSurface.DestroySurface(_initializationContext.Instance,
             _initializationContext.Surface, null);
+        
+#if DEBUG
+        if (_initializationContext.DebugUtils is not null &&
+            _initializationContext.DebugMessenger.Handle != 0)
+        {
+            _initializationContext.DebugUtils.DestroyDebugUtilsMessenger(
+                _initializationContext.Instance,
+                _initializationContext.DebugMessenger,
+                null);
+        }
+#endif
 
         api.DestroyInstance(_initializationContext.Instance, null);
 

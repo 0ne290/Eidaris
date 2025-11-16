@@ -3,10 +3,10 @@ using Silk.NET.Maths;
 
 namespace Eidaris.Infrastructure;
 
-public record struct PointRenderData
+public readonly struct PointRenderData
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal record struct VertexPushConstants
+    internal readonly struct VertexPushConstants
     {
         public VertexPushConstants(Vector2D<float> position, float pointSize)
         {
@@ -17,11 +17,11 @@ public record struct PointRenderData
         public Vector2D<float> Position { get; }
         public float PointSize { get; }
         
-        public float _padding;
+        public readonly float _padding;
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    internal record struct FragmentPushConstants
+    internal readonly struct FragmentPushConstants
     {
         public FragmentPushConstants(Vector4D<float> color)
         {
