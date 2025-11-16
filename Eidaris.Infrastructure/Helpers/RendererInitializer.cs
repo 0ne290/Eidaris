@@ -23,7 +23,7 @@ internal sealed unsafe class RendererInitializer
 
             _api = Vk.GetApi();
             _instance = CreateInstance();
-            
+
 #if DEBUG
             if (_api.TryGetInstanceExtension(_instance, out _debugUtils))
                 _debugMessenger = DebugMessengerCreator.Create(_instance, _debugUtils!);
@@ -68,31 +68,31 @@ internal sealed unsafe class RendererInitializer
             var commandPoolCreator = new CommandPoolCreator(_api, _logicalDevice, queueIndices.GraphicsFamily);
             _commandPool = commandPoolCreator.CreateCommandPool();
             var commandBuffers = commandPoolCreator.AllocateCommandBuffers(_commandPool, Constants.MaxFramesInFlight);
-            
+
             var syncObjectsCreator = new SyncObjectsCreator(_api, _logicalDevice, (uint)swapchainImages.Length);
             var (imageAvailableSemaphores, renderFinishedSemaphores, inFlightFences) = syncObjectsCreator.Create();
             _imageAvailableSemaphores = imageAvailableSemaphores;
             _renderFinishedSemaphores = renderFinishedSemaphores;
             _inFlightFences = inFlightFences;
-            
+
 #if DEBUG
             var debugNamer = new VulkanDebugNamer(_logicalDevice, _debugUtils);
-            
+
             debugNamer.NameSwapchain(_swapchain, "MainSwapchain");
             debugNamer.NameCommandPool(_commandPool, "GraphicsCommandPool");
-            
+
             for (var i = 0; i < commandBuffers.Length; i++)
                 debugNamer.NameCommandBuffer(commandBuffers[i], $"CommandBuffer_Frame{i}");
-            
+
             for (var i = 0; i < imageAvailableSemaphores.Length; i++)
                 debugNamer.NameSemaphore(imageAvailableSemaphores[i], $"ImageAvailable_Frame{i}");
-            
+
             for (var i = 0; i < renderFinishedSemaphores.Length; i++)
                 debugNamer.NameSemaphore(renderFinishedSemaphores[i], $"RenderFinished_Frame{i}");
-            
+
             for (var i = 0; i < inFlightFences.Length; i++)
                 debugNamer.NameFence(inFlightFences[i], $"InFlightFence_Frame{i}");
-            
+
             for (var i = 0; i < swapchainImageViews.Length; i++)
                 debugNamer.NameImageView(swapchainImageViews[i], $"SwapchainImageView_{i}");
 #endif
@@ -105,7 +105,7 @@ internal sealed unsafe class RendererInitializer
             var (pipeline, pipelineLayout) = pipelineCreator.Create(_vertexShaderModule, _fragmentShaderModule);
             _pipeline = pipeline;
             _pipelineLayout = pipelineLayout;
-            
+
 #if DEBUG
             debugNamer.NamePipeline(_pipeline, "PointRenderingPipeline");
 #endif
@@ -145,7 +145,9 @@ internal sealed unsafe class RendererInitializer
 
             // Ownership передан в context, обнуляем поля
             _api = null;
+#if DEBUG
             _debugUtils = null;
+#endif
             _khrSurface = null;
             _khrSwapchain = null;
             _swapchainImageViews = null;
@@ -183,14 +185,14 @@ internal sealed unsafe class RendererInitializer
         using var debugExt = new SilkCString("VK_EXT_debug_utils");
         var extCount = windowExtCount + 1;
         var extensions = stackalloc byte*[(int)extCount];
-        
+
         for (var i = 0; i < windowExtCount; i++)
             extensions[i] = windowExtensions[i];
         extensions[windowExtCount] = debugExt;
-        
+
         using var validationLayer = new SilkCString("VK_LAYER_KHRONOS_validation");
         var layerPtr = (byte*)validationLayer;
-        
+
         // Включаем все validation features для максимальных логов
         var validationFeatures = stackalloc ValidationFeatureEnableEXT[]
         {
@@ -199,14 +201,14 @@ internal sealed unsafe class RendererInitializer
             ValidationFeatureEnableEXT.GpuAssistedExt,
             ValidationFeatureEnableEXT.DebugPrintfExt
         };
-        
+
         var validationFeaturesInfo = new ValidationFeaturesEXT
         {
             SType = StructureType.ValidationFeaturesExt,
             EnabledValidationFeatureCount = 4,
             PEnabledValidationFeatures = validationFeatures
         };
-        
+
         var instanceInfo = new InstanceCreateInfo
         {
             SType = StructureType.InstanceCreateInfo,
@@ -289,7 +291,7 @@ internal sealed unsafe class RendererInitializer
 
         if (_khrSurface is not null && _surface.Handle != 0)
             _khrSurface.DestroySurface(_instance, _surface, null);
-        
+
 #if DEBUG
         if (_debugUtils is not null && _debugMessenger.Handle != 0)
             _debugUtils.DestroyDebugUtilsMessenger(_instance, _debugMessenger, null);
@@ -307,7 +309,7 @@ internal sealed unsafe class RendererInitializer
     private Vk? _api;
 
     private Instance _instance;
-    
+
 #if DEBUG
     private ExtDebugUtils? _debugUtils;
 
