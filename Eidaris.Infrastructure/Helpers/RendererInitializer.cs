@@ -26,7 +26,7 @@ internal sealed unsafe class RendererInitializer
             
 #if DEBUG
             if (_api.TryGetInstanceExtension(_instance, out _debugUtils))
-                _debugMessenger = DebugMessengerCreator.Create(_api, _instance, _debugUtils!);
+                _debugMessenger = DebugMessengerCreator.Create(_instance, _debugUtils!);
 #endif
 
             if (!_api.TryGetInstanceExtension(_instance, out _khrSurface))

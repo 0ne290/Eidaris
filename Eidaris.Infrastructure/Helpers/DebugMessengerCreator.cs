@@ -4,9 +4,9 @@ using Silk.NET.Vulkan.Extensions.EXT;
 
 namespace Eidaris.Infrastructure.Helpers;
 
-internal sealed unsafe class DebugMessengerCreator
+internal static unsafe class DebugMessengerCreator
 {
-    public static DebugUtilsMessengerEXT Create(Vk api, Instance instance, ExtDebugUtils debugUtils)
+    public static DebugUtilsMessengerEXT Create(Instance instance, ExtDebugUtils debugUtils)
     {
         var createInfo = new DebugUtilsMessengerCreateInfoEXT
         {
